@@ -1,0 +1,8 @@
+{
+  "name": "Remix سامانه اتوماسیون سازمانی رابو | Rabo Automation",
+  "description": "سامانه یکپارچه اتوماسیون اداری، کارتابل نامه‌ها و هامش، مدیریت ارتباط با مشتریان (CRM)، تردد و حقوق و دستمزد شرکت مهندسی رابو",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
