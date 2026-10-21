@@ -1,0 +1,52 @@
+name: Build Rabo Automation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: rabo-automation-14050729-0.0.3
+        run: npm install --legacy-peer-deps
+
+      - name: Build React application
+        working-directory: rabo-automation-14050729-0.0.3
+        run: npm run build
+
+      - name: Validate build output
+        run: |
+          test -f rabo-automation-14050729-0.0.3/dist/index.html
+          test -d rabo-automation-14050729-0.0.3/dist/assets
+
+      - name: Package frontend and PHP backend
+        run: |
+          mkdir -p release
+          cp -a rabo-automation-14050729-0.0.3/dist/. release/
+          if [ -d rabo-automation-14050729-0.0.3/api ]; then
+            mkdir -p release/api
+            cp -a rabo-automation-14050729-0.0.3/api/. release/api/
+          fi
+          cd release
+          zip -r ../RABO_DEPLOY.zip .
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: RABO_DEPLOY
+          path: RABO_DEPLOY.zip
