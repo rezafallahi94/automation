@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سامانه اتوماسیون سازمانی رابو | Rabo Automation</title>
+    <meta name="description" content="سامانه یکپارچه اتوماسیون اداری، کارتابل نامه‌ها و مکاتبات اداری، مدیریت ارتباط با مشتریان (CRM)، تردد و حقوق و دستمزد شرکت مهندسی رابو" />
+    <meta property="og:title" content="سامانه اتوماسیون سازمانی رابو | Rabo Automation" />
+    <meta property="og:description" content="سامانه یکپارچه اتوماسیون اداری، کارتابل نامه‌ها و مکاتبات اداری، مدیریت ارتباط با مشتریان (CRM)، تردد و حقوق و دستمزد شرکت مهندسی رابو" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#13213c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/logo.svg" />
+    <link rel="preload" href="/fonts/IRANSansWeb.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/IRANSansWeb_Medium.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/IRANSansWeb_Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sigmasoft-font@2.7.0/iransans/iransans.css">
+  </head>
+  <body class="antialiased bg-slate-50 text-slate-800 selection:bg-amber-100 selection:text-amber-900" style="font-family: 'IRANSans', 'IranSans', 'IRANSansWeb', sans-serif;">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
+
