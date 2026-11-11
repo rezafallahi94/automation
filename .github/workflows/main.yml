@@ -1,52 +1,104 @@
-name: Build Rabo Automation
-
+name: Rabo - Build and Publish
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
-  contents: read
-
+  contents: write
+concurrency:
+  group: rabo-production-release
+  cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Install dependencies
+          cache: npm
+          cache-dependency-path: rabo-automation-14050729-0.0.3/package-lock.json
+      - name: Install locked dependencies
         working-directory: rabo-automation-14050729-0.0.3
-        run: npm install --legacy-peer-deps
-
-      - name: Build React application
+        run: npm ci --legacy-peer-deps --ignore-scripts
+      - name: Verify deployment safety
+        run: python3 -m unittest discover -s tests -v
+      - name: Build website
         working-directory: rabo-automation-14050729-0.0.3
         run: npm run build
-
-      - name: Validate build output
-        run: |
-          test -f rabo-automation-14050729-0.0.3/dist/index.html
-          test -d rabo-automation-14050729-0.0.3/dist/assets
-
-      - name: Package frontend and PHP backend
-        run: |
-          mkdir -p release
-          cp -a rabo-automation-14050729-0.0.3/dist/. release/
-          if [ -d rabo-automation-14050729-0.0.3/api ]; then
-            mkdir -p release/api
-            cp -a rabo-automation-14050729-0.0.3/api/. release/api/
-          fi
-          cd release
-          zip -r ../RABO_DEPLOY.zip .
-
-      - name: Upload deployment package
+      - name: Package static release
+        run: python3 deploy/package_release.py "$RUNNER_TEMP/rabo-ready" "$GITHUB_SHA"
+      - name: Downloadable release
         uses: actions/upload-artifact@v4
         with:
-          name: RABO_DEPLOY
-          path: RABO_DEPLOY.zip
+          name: RABO_READY
+          path: ${{ runner.temp }}/rabo-ready/
+          include-hidden-files: true
+      - name: Update cPanel release branch (linear history)
+        env:
+          READY: ${{ runner.temp }}/rabo-ready
+          PUBLISH: ${{ runner.temp }}/rabo-publish
+        run: |
+          set -euo pipefail
+          git config user.name 'Rabo Release Bot'
+          git config user.email 'rabo-release@users.noreply.github.com'
+          if git ls-remote --exit-code --heads origin cpanel-release >/dev/null; then
+            git fetch origin cpanel-release
+            git worktree add -B cpanel-release "$PUBLISH" FETCH_HEAD
+          else
+            git worktree add --detach "$PUBLISH" HEAD
+            git -C "$PUBLISH" checkout --orphan cpanel-release
+          fi
+          git -C "$PUBLISH" rm -r -f --ignore-unmatch .
+          cp -a "$READY/." "$PUBLISH/"
+          git -C "$PUBLISH" add --all
+          if ! git -C "$PUBLISH" diff --cached --quiet; then
+            git -C "$PUBLISH" commit -m "Release ${GITHUB_SHA}"
+          fi
+          git -C "$PUBLISH" push origin HEAD:cpanel-release
+          echo '### Website ready' >> "$GITHUB_STEP_SUMMARY"
+          echo 'cPanel: Update from Remote, then Deploy HEAD Commit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Frontend only; backend updates need a separate release.' >> "$GITHUB_STEP_SUMMARY"
+  auto-deploy:
+    needs: build
+    if: vars.RABO_AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Update cPanel website over verified SSH
+        env:
+          SSH_HOST: ${{ secrets.RABO_SSH_HOST }}
+          SSH_PORT: ${{ secrets.RABO_SSH_PORT }}
+          SSH_USER: ${{ secrets.RABO_SSH_USER }}
+          SSH_KEY: ${{ secrets.RABO_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.RABO_SSH_KNOWN_HOSTS }}
+          REMOTE_REPO: ${{ vars.RABO_REMOTE_REPO }}
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9_-]+$ ]]
+          SSH_PORT="${SSH_PORT:-22}"
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]]
+          [[ "$REMOTE_REPO" =~ ^/[A-Za-z0-9_./-]+$ && "$REMOTE_REPO" != *..* ]]
+          [[ -n "$SSH_KEY" && -n "$KNOWN_HOSTS" ]]
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/rabo_key
+          chmod 600 ~/.ssh/rabo_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          trap 'rm -f ~/.ssh/rabo_key' EXIT
+          ssh -i ~/.ssh/rabo_key -p "$SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" /bin/bash -s -- "$REMOTE_REPO" <<'REMOTE'
+          set -euo pipefail
+          cd -- "$1"
+          [[ "$(git branch --show-current)" == cpanel-release ]]
+          [[ -z "$(git status --porcelain)" ]]
+          git pull --ff-only origin cpanel-release
+          /bin/bash deploy/install.sh
+          REMOTE
+      - name: Verify published website revision
+        run: |
+          curl --fail --silent --show-error --retry 3 --max-time 30 \
+            "https://raboautomation.ir/rabo-version.json?release=$GITHUB_SHA" \
+            | python3 -c 'import json,os,sys; actual=json.load(sys.stdin)["revision"]; expected=os.environ["GITHUB_SHA"]; assert actual == expected, "Published revision mismatch"; print("Published revision verified:", actual)'
