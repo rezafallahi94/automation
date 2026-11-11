@@ -1,0 +1,4 @@
+# Create this file OUTSIDE public_html and the Git repository:
+# $HOME/.config/rabo-deploy.conf
+# Use the exact document root displayed in cPanel > Domains.
+RABO_WEBROOT='/home/REPLACE_CPANEL_USER/public_html'

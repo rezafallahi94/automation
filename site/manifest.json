@@ -1,0 +1,27 @@
+{
+  "short_name": "رابو",
+  "name": "اتوماسیون مهندسی رابو | سامانه سازمانی",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#13213c",
+  "theme_color": "#13213c",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "fa",
+  "dir": "rtl",
+  "categories": ["business", "productivity"]
+}
