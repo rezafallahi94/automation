@@ -70,12 +70,15 @@ snapshot() {
       cp -R -- "$WEBROOT/$name" "$SNAPSHOT/site/$name"
     fi
   done
+  # CageFS/cPanel may not expose /dev/fd: use a regular private file.
+  # Enumerate first so find failures stop deployment before any live write.
+  find "$SNAPSHOT/site" -type f -print0 > "$STAGE/snapshot-files"
   while IFS= read -r -d '' path; do
     path=${path#"$SNAPSHOT/site/"}
     allowed "$path" || fail "Unexpected legacy static file: $path"
     digest=$(sha256sum "$SNAPSHOT/site/$path"); digest=${digest%% *}
     printf '%s  %s\n' "$digest" "$path" >> "$SNAPSHOT/SHA256SUMS"
-  done < <(find "$SNAPSHOT/site" -type f -print0)
+  done < "$STAGE/snapshot-files"
 }
 # Publish each file via rename in its destination filesystem; switch index last.
 publish() {

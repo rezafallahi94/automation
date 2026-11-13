@@ -1,5 +1,5 @@
 // Service Worker for Rabo Automation PWA
-const CACHE_NAME = "rabo-app-58614568c29b0a0a3178e07b2567c727e3020439";
+const CACHE_NAME = "rabo-app-05220141fba38842c66fe3db96af6e2ed11983e1";
 const PRECACHE_URLS = [
   '/',
   '/index.html',
